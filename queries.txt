@@ -1,0 +1,120 @@
+
+Question 1 
+***Create a query that lists each movie, the film category it is classified in, 
+and the number of times it has been rented out.***
+
+WITH t1 AS (SELECT f.title, c.name as category_name, COUNT(r.rental_date) as rental_count
+    FROM film f
+    JOIN film_category fc
+    ON f.film_id = fc.film_id
+    JOIN category c
+    ON fc.category_id = c.category_id
+    JOIN inventory i
+    ON f.film_id = i.film_id
+    JOIN rental r
+    ON i.inventory_id = r.inventory_id
+    WHERE c.name IN ('Animation', 'Children', 'Classics', 'Comedy', 'Family', 'Music')
+    GROUP BY 1, 2
+    ORDER BY 2, 1)
+    SELECT category_name, COUNT(rental_count)  as count_by_category
+    FROM t1
+    GROUP BY 1;
+--------
+
+Question 2
+***Create a query that shows popularity for film categories from Low to High among General audiences 'G' and Parental guidance suggested'PG' rated movies?
+
+WITH t1 AS(
+	SELECT c.name film_category,
+        f.rating
+        FROM category c
+          JOIN film_category fc ON c.category_id=fc.category_id
+          JOIN film f ON fc.film_id=f.film_id
+          JOIN inventory i ON f.film_id=i.film_id
+          JOIN rental r ON i.inventory_id=r.inventory_id
+            WHERE f.rating='G' OR f.rating= 'PG'),
+     t2 AS(
+          SELECT film_category,
+          COUNT(*) film_rented,
+          NTILE(3) OVER(ORDER BY COUNT(*) DESC) quintile
+          FROM t1
+            GROUP BY 1)
+       SELECT film_category,
+       film_rented,
+       CASE
+           WHEN quintile='1' THEN 'High'
+           WHEN quintile='2' THEN 'Medium'
+           ELSE 'Low'
+       END AS Film_rating
+FROM t2;
+
+-------------------
+
+
+Question 3
+***Can you provide a table with the movie titles and divide them into 4 levels 
+(first_quarter, second_quarter, third_quarter, and final_quarter) based on the quartiles (25%, 50%, 75%) 
+of the rental duration for movies across all categories? 
+
+WITH t1 AS(
+       SELECT 
+       c.name as category, 
+       SUM(f.rental_duration) as rental
+         FROM film_category fc
+         JOIN category c
+         ON c.category_id = fc.category_id
+         JOIN film f
+         ON f.film_id = fc.film_id
+     WHERE c.name IN ('Animation', 'Children', 'Classics', 'Comedy', 'Family', 'Music')
+     GROUP BY 1),
+     t2 AS(
+     SELECT category,
+     rental,
+     NTILE(4) OVER (ORDER BY rental) AS quartile
+     from t1)
+     SELECT category,
+     rental,
+       CASE
+           WHEN quartile='1' THEN '100%'
+           WHEN quartile='2' THEN '75%'
+           WHEN quartile='3' THEN '50%'
+           ELSE '25%'
+           END AS persentage_quartile
+      FROM t2;
+
+------
+
+-------------
+Question 4
+***What is a top customer rental behavior (avarage rent per day and days between rentals)?
+WITH t1 AS(
+	SELECT customer_id,
+          COUNT(*) AS film_rented,
+          DENSE_RANK() OVER (
+          ORDER BY COUNT(*) DESC) AS rank
+   FROM rental
+   GROUP BY 1
+   ORDER BY 2 DESC
+   LIMIT 10),
+     t2 AS(
+          SELECT rank,
+          r1.customer_id,
+          CONCAT(first_name, ' ', last_name) AS customer_name,
+          DATE_TRUNC('day', rental_date) AS DAY,
+          COUNT(*) AS avg_rentals_per_day,
+          CAST(DATE_TRUNC('day', rental_date) AS DATE) - CAST(LAG(DATE_TRUNC('day', rental_date)) 
+          OVER (PARTITION BY r1.customer_id
+          ORDER BY DATE_TRUNC('day', rental_date)) AS DATE) AS gap_between_rentals
+   FROM t1 r1
+   JOIN rental r2 ON r1.customer_id = r2.customer_id
+   JOIN customer c ON r1.customer_id = c.customer_id
+   GROUP BY 1,2,3,4)
+SELECT customer_name,
+       ROUND(AVG(avg_rentals_per_day)) AS avg_daily_rentals,
+       ROUND(AVG(gap_between_rentals)) AS gap_between_rentals
+FROM t2
+GROUP BY 1
+ORDER BY 1;
+
+
+
