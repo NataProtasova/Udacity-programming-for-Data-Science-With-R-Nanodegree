@@ -121,7 +121,7 @@ ggplot(aes(x = City, y = Trip.Duration), data = city) +
 my.summary <- with(city, aggregate(list(Trip.Duration), by = list(City), 
 FUN = function(x) { mon.mean = mean(x, na.rm = TRUE) } ))
 
-#Displayt table
+#Display summary table
 colnames(my.summary) <- c('City', 'Average Trip Duration')
 my.summary
 
