@@ -30,3 +30,7 @@ You can perform all operations directly within the classroom. However, if you wo
 
 What Does A Submission Look Like?
 There are two possible ways to submit your work. You may submit your work using the classroom notebook, which you will find in the Project Workspace part of this lesson. The details of what should be in your notebook are shared on the next pages of this lesson.
+
+Project 3
+Project Overview
+It's time to put what you've learned about version control and GitHub into practice! In this project, you'll be simulating a realistic workflow to refactor your previous BikeShare project using Git. Here's an overview of your tasks for this project.
